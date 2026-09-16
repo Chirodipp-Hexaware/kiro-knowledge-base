@@ -1,0 +1,35 @@
+{
+  "$schema": "https://kiro.dev/schemas/model-policy.json",
+  "version": "1.0",
+  "description": "Models allowed for Kiro sessions across the org. Deny-by-default: only models listed in 'allowed' may be selected. 'default' is used when a session does not pin a model.",
+  "policy": "deny-by-default",
+  "default": "auto",
+  "allowed": [
+    {
+      "id": "auto",
+      "reason": "Server-selected model within the approved set. Recommended default."
+    },
+    {
+      "id": "claude-sonnet-4.5",
+      "reason": "General-purpose coding and spec work."
+    },
+    {
+      "id": "claude-sonnet-4",
+      "reason": "General-purpose coding and spec work."
+    },
+    {
+      "id": "claude-3-7-sonnet",
+      "reason": "Fallback for coding tasks."
+    }
+  ],
+  "denied": [
+    {
+      "idPattern": "*",
+      "reason": "Deny by default. Only models listed in 'allowed' may be used."
+    }
+  ],
+  "constraints": {
+    "requireApprovedProviderRegion": true,
+    "disallowExternalModelEndpoints": true
+  }
+}

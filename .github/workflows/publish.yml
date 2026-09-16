@@ -1,0 +1,99 @@
+name: publish
+
+# Validates the knowledge base on every PR, and "publishes" it (tags a release)
+# when validated changes land on the default branch. Publishing here means the
+# knowledge base is marked as a consumable, versioned artifact for Kiro Profiles.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate knowledge base
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate JSON policy and hook files
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS= read -r -d '' f; do
+            if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f"; then
+              echo "::error file=$f::Invalid JSON"
+              fail=1
+            else
+              echo "ok: $f"
+            fi
+          done < <(find guardrails hooks -type f -name '*.json' -print0)
+          exit $fail
+
+      - name: Check required files exist
+        run: |
+          set -euo pipefail
+          required=(
+            "CODEOWNERS"
+            "README.md"
+            "steering/design-template.md"
+            "steering/org-standards/coding-standards.md"
+            "steering/org-standards/test-conventions.md"
+            "steering/org-standards/security.md"
+            "steering/org-standards/git-workflow.md"
+            "guardrails/mcp-allowlist.json"
+            "guardrails/permission-policy.json"
+            "guardrails/model-policy.json"
+            "agents/sdlc_orchestrator_agent.md"
+            "agents/design_artifact_sync_agent.md"
+            "agents/coding_standards_agent.md"
+            "hooks/test-on-save.hook.json"
+            "hooks/lint-on-save.hook.json"
+          )
+          missing=0
+          for f in "${required[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "::error::Missing required file: $f"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          globs: |
+            **/*.md
+            #node_modules
+        continue-on-error: true
+
+  publish:
+    name: Publish
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Tag knowledge-base release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="kb-$(date +%Y.%m.%d)-${GITHUB_SHA::7}"
+          echo "Publishing knowledge base version: $version"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$version" -m "Knowledge base publish $version"
+          git push origin "$version"

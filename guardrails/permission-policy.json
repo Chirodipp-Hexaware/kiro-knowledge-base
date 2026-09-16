@@ -1,0 +1,54 @@
+{
+  "$schema": "https://kiro.dev/schemas/permission-policy.json",
+  "version": "1.0",
+  "description": "Permission policy governing fs_write and shell tool use across Kiro sessions. Deny rules take precedence over allow rules. Actions that match a 'confirm' rule require explicit human approval before execution.",
+  "fsWrite": {
+    "default": "allow",
+    "deny": [
+      {
+        "pathPattern": "**/.git/**",
+        "reason": "Never write into the git internal directory."
+      },
+      {
+        "pathPattern": "**/{.env,.env.*,*.pem,*.key,id_rsa,credentials.json}",
+        "reason": "Never write secrets or credential material into source."
+      },
+      {
+        "pathPattern": "**/node_modules/**",
+        "reason": "Generated dependency tree — never edit by hand."
+      },
+      {
+        "pathPattern": "CODEOWNERS",
+        "reason": "Ownership file — change only through a reviewed PR."
+      }
+    ],
+    "confirm": [
+      {
+        "pathPattern": "**/.github/workflows/**",
+        "reason": "CI/CD pipeline changes require human (InfoSec) review before merge."
+      },
+      {
+        "pathPattern": "guardrails/**",
+        "reason": "Guardrail policy changes require platform-team approval."
+      }
+    ]
+  },
+  "shell": {
+    "default": "confirm",
+    "allow": [
+      { "commandPattern": "^git (status|diff|log|branch|add|commit|push|checkout|switch|fetch|pull)\\b", "reason": "Standard git workflow." },
+      { "commandPattern": "^(npm|pnpm|yarn) (install|ci|run|test)\\b", "reason": "Node build/test." },
+      { "commandPattern": "^mvn (clean|compile|test|verify|package)\\b", "reason": "Maven build/test." },
+      { "commandPattern": "^(gradle|./gradlew) \\b", "reason": "Gradle build/test." },
+      { "commandPattern": "^terraform (init|validate|plan|fmt)\\b", "reason": "Non-mutating Terraform." }
+    ],
+    "deny": [
+      { "commandPattern": "\\brm\\s+-rf\\s+/\\b", "reason": "Catastrophic recursive delete from root." },
+      { "commandPattern": "\\bgit\\s+push\\b.*--force\\b", "reason": "Force push is destructive; requires explicit human action." },
+      { "commandPattern": "\\bgit\\s+reset\\s+--hard\\b", "reason": "Destructive history reset." },
+      { "commandPattern": "\\bgit\\s+clean\\s+-[a-z]*f", "reason": "Destructive working-tree clean." },
+      { "commandPattern": "\\bcurl\\b.*\\|\\s*(sh|bash)\\b", "reason": "Piping remote scripts to a shell is prohibited." },
+      { "commandPattern": "\\bterraform\\s+(apply|destroy)\\b", "reason": "Mutating infra requires human approval via the pipeline." }
+    ]
+  }
+}

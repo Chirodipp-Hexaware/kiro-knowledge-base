@@ -1,0 +1,53 @@
+{
+  "$schema": "https://kiro.dev/schemas/mcp-allowlist.json",
+  "version": "1.0",
+  "description": "MCP servers allowed by the Kiro Profile. Any server not on this allowlist is blocked at the profile level. Adding a server requires a reviewed PR (CODEOWNERS) and, where it reaches an external vendor, an ADR.",
+  "policy": "deny-by-default",
+  "allowed": [
+    {
+      "id": "aws",
+      "reason": "Provision AWS resources via Terraform with org guardrails and tagging.",
+      "approvedTools": ["*"]
+    },
+    {
+      "id": "github",
+      "reason": "Read repos/issues/PRs, create branches, commit, open PRs. Never merges or pushes to a protected branch without human approval.",
+      "approvedTools": ["*"],
+      "constraints": {
+        "denyPushToProtectedBranch": true,
+        "denyMerge": true
+      }
+    },
+    {
+      "id": "jira",
+      "reason": "Create/update tickets from tasks.md and pull ticket context into spec sessions.",
+      "approvedTools": ["*"]
+    },
+    {
+      "id": "confluence",
+      "reason": "Pull documentation into design context; publish finished specs as pages.",
+      "approvedTools": ["*"]
+    },
+    {
+      "id": "sonarqube",
+      "reason": "Trigger analysis and read quality-gate status during code review. Failed gates are surfaced to humans, never auto-overridden.",
+      "approvedTools": ["*"]
+    },
+    {
+      "id": "maven",
+      "reason": "Verify Maven/Gradle dependency coordinates and latest stable versions.",
+      "approvedTools": ["*"]
+    },
+    {
+      "id": "gradle",
+      "reason": "Inspect Gradle projects and run build/test tasks for pre-PR validation.",
+      "approvedTools": ["*"]
+    }
+  ],
+  "denied": [
+    {
+      "idPattern": "*",
+      "reason": "Deny by default. Only servers listed in 'allowed' may be used."
+    }
+  ]
+}

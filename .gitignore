@@ -1,0 +1,14 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local secrets — never commit
+.env
+.env.*
+*.pem
+*.key
+
+# Node (if tooling is added later)
+node_modules/
